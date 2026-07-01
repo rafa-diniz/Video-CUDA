@@ -1,15 +1,19 @@
-#include <cstdio>
-#include <cstdlib>
+#include "arange.hpp"
+
+#include <cstddef>
 #include <cstdint>
+#include <vector>
 
 #include <cuda_runtime.h>
 
-#include <vector>
 
-
-__global__ void arange(std::int32_t *values, std::int32_t start, std::size_t len)
+__global__ void arangeKernel(
+	std::int32_t *values, 
+	std::int32_t start, 
+	std::size_t len
+)
 {
-	std::uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
+	const std::uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
 
 	if(i < len)
 	{
@@ -17,7 +21,10 @@ __global__ void arange(std::int32_t *values, std::int32_t start, std::size_t len
 	}
 }
 
-std::vector<std::int32_t> arange(std::int32_t start, std::int32_t stop)
+std::vector<std::int32_t> arange(
+	std::int32_t start, 
+	std::int32_t stop
+)
 {
 
 	// return empty vector if stop <= start
@@ -33,12 +40,6 @@ std::vector<std::int32_t> arange(std::int32_t start, std::int32_t stop)
 
 	std::vector<std::int32_t> v(numElements);
 
-	for(auto i : v)
-	{
-		printf("%d ", i);
-	}
-	printf("\n");
-
 	// Allocate array in memory
 	std::int32_t* gpuArray = nullptr;
 	cudaMalloc(&gpuArray, numBytes);
@@ -49,26 +50,11 @@ std::vector<std::int32_t> arange(std::int32_t start, std::int32_t stop)
 	// If I have 256 threads per block, add the num of elements to that -1 and divide by the number of threads.
 	std::size_t numBlocks = (numElements + threadsPerBlock - 1) / threadsPerBlock;
 
-	arange<<<numBlocks, 256>>>(gpuArray, start, numElements);
+	arangeKernel<<<numBlocks, 256>>>(gpuArray, start, numElements);
 
 	cudaMemcpy(v.data(), gpuArray, numBytes, cudaMemcpyDeviceToHost);
 
 	cudaFree(gpuArray);
 
 	return v;
-}
-
-int main()
-{
-	std::vector<std::int32_t> myVec = arange(10, 1400'000'000);
-
-
-	for(auto i : myVec)
-	{
-		printf("%d ", i);
-	}
-	printf("\n");
-
-
-	return EXIT_SUCCESS;
 }
