@@ -3,50 +3,38 @@
 
 #include <stdexcept>
 
-
+/*
+CUDA kernel that crops a given image. Each thread indexes the cropped image and finds
+the corresponding value in the original image that should be copied.
+*/
 __global__ void cropImgKernel(
     stbi_uc *img,
     stbi_uc *croppedImg,
-    std::size_t numValuesImg,
+    std::size_t numValuesCropped,
     int cropXStart,
     int cropYStart,
-    int cropXEnd,
-    int cropYEnd,
-    int width,
     int channels,
+    std::size_t cropWidth,
     std::size_t bytesPerPixel,
-    std::size_t bytesPerRow,
-    std::size_t bytesPerRowCropped
+    std::size_t bytesPerRow
 )
 {
     const std::size_t i = blockIdx.x * blockDim.x + threadIdx.x;
-    if(i < numValuesImg)
+    if(i < numValuesCropped)
     {
-        int x = (i / channels) % width;
-        int y = (i / channels) / width;
-        
-        // check if x and y are inside the crop region
-        if( (x >= cropXStart) && 
-            (x <= cropXEnd) && 
-            (y >= cropYStart) && 
-            (y <= cropYEnd)
-        )
-        {
-            const std::size_t currentChannel = i % static_cast<std::size_t>(channels);
+        const std::size_t currentChannel = i % static_cast<std::size_t>(channels);
 
-            // calculate corresponding position in the original and cropped images
-            const std::size_t pos = 
-                static_cast<std::size_t>(y) * bytesPerRow + 
-                static_cast<std::size_t>(x) * bytesPerPixel + 
+        // get the (x,y) coordinates in the cropped image and use them to get the 
+        // corresponding position in the original image
+        int xCroppedImg = (i / channels) % (cropWidth);
+        int yCroppedImg = (i / channels) / (cropWidth);
+
+        const std::size_t posOriginalImg =
+                static_cast<std::size_t>(yCroppedImg + cropYStart) * bytesPerRow + 
+                static_cast<std::size_t>(xCroppedImg + cropXStart) * bytesPerPixel + 
                 currentChannel;
 
-            const std::size_t posCropped = 
-                static_cast<std::size_t>(y-cropYStart) * bytesPerRowCropped + 
-                static_cast<std::size_t>(x-cropXStart) * bytesPerPixel + 
-                currentChannel;
-
-            croppedImg[posCropped] = img[pos];
-        }
+        croppedImg[i] = img[posOriginalImg];
     }
 }
 
@@ -107,31 +95,25 @@ void cropImg(
     const std::size_t numBytesCropped = 
         numValuesCropped * sizeof(stbi_uc);
 
-    const std::size_t bytesPerRowCropped =
-        cropWidth * bytesPerPixel;
-
     // allocate space for the cropped img
     stbi_uc* croppedImg = nullptr;
     cudaMalloc(&croppedImg, numBytesCropped);
 
     constexpr std::size_t threadsPerBlock = 256;
     const std::size_t numBlocks = 
-        (numValuesImg + threadsPerBlock - 1) / threadsPerBlock;
+        (numValuesCropped + threadsPerBlock - 1) / threadsPerBlock;
 
     // invoke GPU kernel
     cropImgKernel<<<numBlocks, threadsPerBlock>>>(
         gpuImg, 
         croppedImg, 
-        numValuesImg, 
+        numValuesCropped, 
         cropXStart, 
         cropYStart, 
-        cropXEnd, 
-        cropYEnd, 
-        width, 
         channels,
+        cropWidth, 
         bytesPerPixel,
-        bytesPerRow,
-        bytesPerRowCropped
+        bytesPerRow
     );
 
     cudaMemcpy(img, croppedImg, numBytesCropped, cudaMemcpyDeviceToHost);
