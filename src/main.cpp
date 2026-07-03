@@ -28,15 +28,11 @@ int main()
 
 	std::printf("Cropping Img: \n\n");
 
-	int cropXStart = 0;
+	int cropXStart = 1;
 	int cropYStart = 1;
 	int cropXEnd   = 2;
 	int cropYEnd   = 1;
-
-    // Clip crop end to correct limits
-    if(cropXEnd >= width)  {cropXEnd = width  - 1;}
-    if(cropYEnd >= height) {cropYEnd = height - 1;}
-
+	
 	cropImg(
 		img, 
 		height, 
