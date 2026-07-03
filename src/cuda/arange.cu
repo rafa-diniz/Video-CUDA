@@ -21,6 +21,7 @@ __global__ void arangeKernel(
 	}
 }
 
+
 std::vector<std::int32_t> arange(
 	std::int32_t start, 
 	std::int32_t stop
@@ -44,7 +45,7 @@ std::vector<std::int32_t> arange(
 	std::int32_t* gpuArray = nullptr;
 	cudaMalloc(&gpuArray, numBytes);
 
-	// Copy data in the vector to GPU. Not actually needed since __global__ void arange already overwrites every value!
+	// Copy data in the vector to GPU. Not actually needed since arangeKernel already overwrites every value!
 	// cudaMemcpy(gpuArray, v.data(), numBytes, cudaMemcpyHostToDevice);
 
 	// If I have 256 threads per block, add the num of elements to that -1 and divide by the number of threads.

@@ -16,22 +16,13 @@ __global__ void adjustBrightnessKernel(
     int height,
     int width,
     int channels,
+    std::size_t numElements,
     std::int16_t brightnessChange
 )
 {
     const std::size_t i = blockIdx.x * blockDim.x + threadIdx.x;
 
-
-    // Get the total number of values in the original image.
-    // For each of them, we'll calculate their new positions in the 2D
-    // array using pitch and the image width
-    const std::size_t numValues =
-        static_cast<std::size_t>(width) *
-        static_cast<std::size_t>(height) *
-        static_cast<std::size_t>(channels);
-
-
-	if(i < numValues)
+	if(i < numElements)
 	{
         const int x = (i / channels) % width;
         const int y = (i / channels) / width;
@@ -109,7 +100,8 @@ void adjustBrightness(
         pitch, 
         height, 
         width, 
-        channels, 
+        channels,
+        numElements, 
         brightnessChange
     );
 
