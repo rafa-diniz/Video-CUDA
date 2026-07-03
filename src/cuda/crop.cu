@@ -1,5 +1,6 @@
 #include "crop.hpp"
 #include "image_utils.hpp"
+#include "cuda_check.hpp"
 
 #include <stdexcept>
 
@@ -76,8 +77,20 @@ void cropImg(
     
     // allocate bytes for original img and copy it
     stbi_uc* gpuImg = nullptr;
-    cudaMalloc(&gpuImg, numBytesImg);
-    cudaMemcpy(gpuImg, img, numBytesImg, cudaMemcpyHostToDevice);
+    checkCuda(
+        cudaMalloc(
+            &gpuImg, 
+            numBytesImg
+        )
+    );
+    checkCuda(
+        cudaMemcpy(
+            gpuImg, 
+            img, 
+            numBytesImg, 
+            cudaMemcpyHostToDevice
+        )
+    );
 
     // +1 makes the crop inclusive. 
     // Without it, a crop with (startX, startY)= (0, 0) and (endX, endY) = (0, 0) wouldn't return anything.
@@ -97,7 +110,12 @@ void cropImg(
 
     // allocate space for the cropped img
     stbi_uc* croppedImg = nullptr;
-    cudaMalloc(&croppedImg, numBytesCropped);
+    checkCuda(
+        cudaMalloc(
+            &croppedImg, 
+            numBytesCropped
+        )
+    );
 
     constexpr std::size_t threadsPerBlock = 256;
     const std::size_t numBlocks = 
@@ -116,10 +134,25 @@ void cropImg(
         bytesPerRow
     );
 
-    cudaMemcpy(img, croppedImg, numBytesCropped, cudaMemcpyDeviceToHost);
+    checkCuda(
+        cudaMemcpy(
+            img, 
+            croppedImg, 
+            numBytesCropped, 
+            cudaMemcpyDeviceToHost
+        )
+    );
 
-    cudaFree(gpuImg);
-    cudaFree(croppedImg);
+    checkCuda(
+        cudaFree(
+            gpuImg
+        )
+    );
+    checkCuda(
+        cudaFree(
+            croppedImg
+        )
+    );
     
     return;
 }

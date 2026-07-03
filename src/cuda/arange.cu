@@ -1,5 +1,7 @@
 #include "arange.hpp"
 
+#include "cuda_check.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -43,19 +45,39 @@ std::vector<std::int32_t> arange(
 
 	// Allocate array in memory
 	std::int32_t* gpuArray = nullptr;
-	cudaMalloc(&gpuArray, numBytes);
+	checkCuda(
+		cudaMalloc(
+			&gpuArray, 
+			numBytes
+		)
+	);
 
-	// Copy data in the vector to GPU. Not actually needed since arangeKernel already overwrites every value!
-	// cudaMemcpy(gpuArray, v.data(), numBytes, cudaMemcpyHostToDevice);
+	// Copying the vector data to the GPU is not actually needed since arangeKernel already overwrites every value!
 
 	// If I have 256 threads per block, add the num of elements to that -1 and divide by the number of threads.
-	std::size_t numBlocks = (numElements + threadsPerBlock - 1) / threadsPerBlock;
+	std::size_t numBlocks = 
+		(numElements + threadsPerBlock - 1) / threadsPerBlock;
 
-	arangeKernel<<<numBlocks, 256>>>(gpuArray, start, numElements);
+	arangeKernel<<<numBlocks, 256>>>(
+		gpuArray, 
+		start, 
+		numElements
+	);
 
-	cudaMemcpy(v.data(), gpuArray, numBytes, cudaMemcpyDeviceToHost);
+	checkCuda(
+		cudaMemcpy(
+			v.data(), 
+			gpuArray, 
+			numBytes, 
+			cudaMemcpyDeviceToHost
+		)
+	);
 
-	cudaFree(gpuArray);
+	checkCuda(
+		cudaFree(
+			gpuArray
+		)
+	);
 
 	return v;
 }

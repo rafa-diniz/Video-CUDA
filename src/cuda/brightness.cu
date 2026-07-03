@@ -1,5 +1,6 @@
 #include "brightness.hpp"
 #include "stb/stb_image.h"
+#include "cuda_check.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -76,22 +77,26 @@ void adjustBrightness(
     std::size_t pitch;
     
     // Allocate img in VRAM
-    cudaMallocPitch(
-        &gpuImg,
-        &pitch,
-        rowBytes,
-        height
+    checkCuda(
+        cudaMallocPitch(
+            &gpuImg,
+            &pitch,
+            rowBytes,
+            height
+        )
     );
 
     // Copy img to GPU
-    cudaMemcpy2D(
-        gpuImg, 
-        pitch, 
-        img, 
-        rowBytes, 
-        rowBytes, 
-        height, 
-        cudaMemcpyHostToDevice
+    checkCuda(
+        cudaMemcpy2D(
+            gpuImg, 
+            pitch, 
+            img, 
+            rowBytes, 
+            rowBytes, 
+            height, 
+            cudaMemcpyHostToDevice
+        )
     );
     
     // Dispatch GPU Call
@@ -106,17 +111,23 @@ void adjustBrightness(
     );
 
     // Copy back to CPU
-    cudaMemcpy2D(
-        img, 
-        rowBytes, 
-        gpuImg, 
-        pitch, 
-        rowBytes, 
-        height, 
-        cudaMemcpyDeviceToHost
+    checkCuda(
+        cudaMemcpy2D(
+            img, 
+            rowBytes, 
+            gpuImg, 
+            pitch, 
+            rowBytes, 
+            height, 
+            cudaMemcpyDeviceToHost
+        )
     );
 
-    cudaFree(gpuImg);
+    checkCuda(
+        cudaFree(
+            gpuImg
+        )
+    );
 
 	return;
 }
