@@ -8,13 +8,16 @@ project(
 
 add_executable(video_cuda
                 src/main.cpp
-                src/arange.cu
-                src/brightness.cu
-                src/image_utils.cpp
-                src/stb_impl.cpp)
+                src/cuda/arange.cu
+                src/cuda/brightness.cu
+                src/cuda/crop.cu
+                src/image/image_utils.cpp
+                src/image/stb_impl.cpp
+                )
 
 target_include_directories(video_cuda PRIVATE
-                            ${CMAKE_CURRENT_SOURCE_DIR}/include
+                            ${CMAKE_CURRENT_SOURCE_DIR}/include/image
+                            ${CMAKE_CURRENT_SOURCE_DIR}/include/ops
                             ${CMAKE_CURRENT_SOURCE_DIR}/third_party
 )
 
