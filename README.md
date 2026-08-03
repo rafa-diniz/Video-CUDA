@@ -1,4 +1,4 @@
-# Video-CUDA - 
+# Video-CUDA
 
 
 ![Video-CUDA](assets/videocuda.png)
