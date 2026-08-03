@@ -1,6 +1,10 @@
-# Video-CUDA
+# Video-CUDA - 
 
-A video preprocessing pipeline written in CUDA kernels and C++. Implements cropping, brightness changes, normalization and resizing.
+
+![Video-CUDA](assets/videocuda.png)
+
+### A preprocessing library written in CUDA kernels and C++. Implements operations useful in Computer Vision ML such as cropping, brightness adjustment and normalization.
+
 
 ---
 
