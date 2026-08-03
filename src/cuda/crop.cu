@@ -8,7 +8,7 @@
 CUDA kernel that crops a given image. Each thread indexes the cropped image and finds
 the corresponding value in the original image that should be copied.
 */
-__global__ void cropImgKernel(
+__global__ void cropKernel(
     stbi_uc *img,
     stbi_uc *croppedImg,
     std::size_t numValuesCropped,
@@ -40,7 +40,7 @@ __global__ void cropImgKernel(
 }
 
 
-void cropImg(
+void crop(
     stbi_uc *img, 
     int height,
     int width,
@@ -122,7 +122,7 @@ void cropImg(
         (numValuesCropped + threadsPerBlock - 1) / threadsPerBlock;
 
     // invoke GPU kernel
-    cropImgKernel<<<numBlocks, threadsPerBlock>>>(
+    cropKernel<<<numBlocks, threadsPerBlock>>>(
         gpuImg, 
         croppedImg, 
         numValuesCropped, 

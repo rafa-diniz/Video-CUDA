@@ -5,6 +5,7 @@
 #include "arange.hpp"
 #include "brightness.hpp"
 #include "crop.hpp"
+#include "normalize.hpp"
 #include "image_utils.hpp"
 
 #include "stb/stb_image.h"
@@ -18,13 +19,14 @@ int main()
 	int height   = 0;
 	int channels = 0;
 	constexpr int outputChannels = 3;
-
+	
 	stbi_uc* img = stbi_load(
 		"assets/rgb.png", &width, &height, &channels, outputChannels
 	);
 
 
 	printImg(img, height, width, outputChannels);
+	/*
 
 	std::printf("Cropping Img: \n\n");
 
@@ -33,7 +35,7 @@ int main()
 	int cropXEnd   = 2;
 	int cropYEnd   = 1;
 	
-	cropImg(
+	crop(
 		img, 
 		height, 
 		width, 
@@ -53,6 +55,13 @@ int main()
 		cropHeight, 
 		cropWidth, 
 		outputChannels
+	);
+	*/
+	normalize(
+		img,
+		height,
+		width,
+		channels
 	);
 
 	stbi_image_free(img);

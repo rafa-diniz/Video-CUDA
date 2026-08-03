@@ -12,14 +12,14 @@ add_executable(video_cuda
                 src/cuda/brightness.cu
                 src/cuda/crop.cu
                 src/cuda/cuda_check.cu
+                src/cuda/normalize.cu
                 src/image/image_utils.cpp
                 src/image/stb_impl.cpp
                 )
 
 target_include_directories(video_cuda PRIVATE
-                            ${CMAKE_CURRENT_SOURCE_DIR}/include/image
-                            ${CMAKE_CURRENT_SOURCE_DIR}/include/ops
                             ${CMAKE_CURRENT_SOURCE_DIR}/include/cuda
+                            ${CMAKE_CURRENT_SOURCE_DIR}/include/image
                             ${CMAKE_CURRENT_SOURCE_DIR}/third_party
 )
 

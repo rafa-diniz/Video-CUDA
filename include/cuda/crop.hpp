@@ -3,7 +3,7 @@
 #include <cstdint>
 #include "stb/stb_image.h"
 
-void cropImg(
+void crop(
     stbi_uc* img, 
     int height,
     int width,
