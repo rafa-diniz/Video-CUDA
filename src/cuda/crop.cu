@@ -1,8 +1,11 @@
 #include "crop.hpp"
 #include "image_utils.hpp"
-#include "cuda_check.hpp"
+#include "cuda_utils.hpp"
 
 #include <stdexcept>
+
+
+#include <cuda_runtime.h>
 
 /*
 CUDA kernel that crops a given image. Each thread indexes the cropped image and finds

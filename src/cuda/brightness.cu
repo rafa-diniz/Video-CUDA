@@ -1,6 +1,6 @@
 #include "brightness.hpp"
 #include "stb/stb_image.h"
-#include "cuda_check.hpp"
+#include "cuda_utils.hpp"
 
 #include <cstddef>
 #include <cstdint>

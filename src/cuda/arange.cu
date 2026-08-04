@@ -1,6 +1,6 @@
 #include "arange.hpp"
 
-#include "cuda_check.hpp"
+#include "cuda_utils.hpp"
 
 #include <cstddef>
 #include <cstdint>
