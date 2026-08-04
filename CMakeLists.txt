@@ -8,11 +8,14 @@ project(
 
 add_executable(video_cuda
                 src/main.cpp
+                
                 src/cuda/arange.cu
                 src/cuda/brightness.cu
                 src/cuda/crop.cu
-                src/cuda/cuda_check.cu
+                src/cuda/cuda_utils.cu
+                src/cuda/math_utils.cu
                 src/cuda/normalize.cu
+
                 src/image/image_utils.cpp
                 src/image/stb_impl.cpp
                 )
