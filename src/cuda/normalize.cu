@@ -1,53 +1,18 @@
 #include "normalize.hpp"
 
 #include "stb/stb_image.h"
-#include "cuda_check.hpp"
+#include "math_utils.hpp"
+#include "cuda_utils.hpp"
+
 
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
-#include <iostream>
 
 #include <cuda_runtime.h>
 
-// TODO stdKernel doesn't actually calculate standard deviations. It's actually doing a sum of squared differences. Move it to a separate C++ function that actually returns the standard deviation.
-// TODO The code is pretty messy. See if I can move stuff out of the main normalize() function.
-// TODO The mean and standard deviation is done per-image, when it would be more reasonable to do it per-channel.
-
-__global__ void sumKernel(
-    stbi_uc* values,
-    float* outputSum,
-    std::size_t numElements
-)
-{
-    const std::size_t i = 
-        blockIdx.x * blockDim.x + threadIdx.x;
-    
-    if (i < numElements)
-    {
-        atomicAdd(outputSum, values[i]);
-    }
-}
-
-
-__global__ void stdKernel(
-    stbi_uc* values,
-    float* outputStd,
-    float mean,
-    std::size_t numElements
-)
-{
-    const std::size_t i = 
-        blockIdx.x * blockDim.x + threadIdx.x;
-    
-    if (i < numElements)
-    {
-        float diff = values[i] - mean;
-        diff       = diff * diff;
-        atomicAdd(outputStd, diff);
-    }
-}
+// TODO The mean and standard deviation is calculated per-image, when it would be more reasonable to do it per-channel.
 
 
 /*
@@ -73,7 +38,7 @@ __global__ void normalizeKernel(
 
 
 std::vector<float> normalize(
-    stbi_uc* img, 
+    stbi_uc* img,
     int height,
     int width,
     int channels
@@ -89,99 +54,25 @@ std::vector<float> normalize(
     const std::size_t numBlocks       = (numElements + threadsPerBlock - 1) / threadsPerBlock;
 
 
-    stbi_uc* gpuImg = nullptr;
-    std::size_t imgBytes = numElements * sizeof(stbi_uc);
-    checkCuda(
-        cudaMalloc(
-            &gpuImg,
-            imgBytes
-        )
-    );
-
-    // Copy Img to GPU
-    checkCuda(
-        cudaMemcpy(
-            gpuImg,
-            img,
-            imgBytes,
-            cudaMemcpyHostToDevice
-        )
-    );
-
-    // Allocate sum on the GPU.
-    float sum = 0;
-    float* sumGpu;
-
-    checkCuda(
-        cudaMalloc(&sumGpu, sizeof(float))
-    );
-
-    checkCuda(
-        cudaMemset(
-            sumGpu,
-            0,
-            sizeof(float)
-        )
-    );
-
-    sumKernel<<<numBlocks, threadsPerBlock>>>(
-        gpuImg,
-        sumGpu,
+    stbi_uc* gpuImg = moveToGPU(
+        img,
         numElements
     );
-
-
-    checkCuda(cudaGetLastError());
-
-    // Move sum result back to CPU
-    checkCuda(
-        cudaMemcpy(
-            &sum,
-            sumGpu,
-            sizeof(float),
-            cudaMemcpyDeviceToHost
-        )
-    );
-
-    float mean = sum / numElements;
-
-    float stdDev = 0;
-    float* stdDevGpu;
-
-    checkCuda(
-        cudaMalloc(&stdDevGpu, sizeof(float))
-    );
-
-    checkCuda(
-        cudaMemset(
-            stdDevGpu,
-            0,
-            sizeof(float)
-        )
-    );
-
-
-    stdKernel<<<numBlocks, threadsPerBlock>>>(
+    
+    double mean = meanArray(
         gpuImg,
-        stdDevGpu,
+        numElements,
+        threadsPerBlock,
+        numBlocks
+    );
+
+    double stdDev = stdDeviation(
+        gpuImg,
         mean,
-        numElements
+        numElements,
+        threadsPerBlock,
+        numBlocks
     );
-
-    checkCuda(cudaGetLastError());
-
-    // Move sum result back to CPU
-    checkCuda(
-        cudaMemcpy(
-            &stdDev,
-            stdDevGpu,
-            sizeof(float),
-            cudaMemcpyDeviceToHost
-        )
-    );
-
-    stdDev = stdDev / numElements;
-    stdDev = std::sqrt(stdDev);
 
     //  Allocate normalized img on the GPU
     float* normalizedImgGpu  = nullptr;
@@ -211,29 +102,19 @@ std::vector<float> normalize(
             stdDev 
         );
         
-        checkCuda(cudaGetLastError());
         checkCuda(cudaDeviceSynchronize());
+        checkCuda(cudaGetLastError());
         
     }
 
 
-
-    std::vector<float> normalizedImgCPU;
-    normalizedImgCPU.reserve(numElements);
-    normalizedImgCPU.resize(numElements);
-
-    checkCuda(
-        cudaMemcpy(
-            normalizedImgCPU.data(),
-            normalizedImgGpu,
-            normImgBytes,
-            cudaMemcpyDeviceToHost
-        )
+    // Move img back to the CPU
+    std::vector<float> normalizedImgCPU = moveFromGPU(
+        normalizedImgGpu,
+        numElements
     );
-
+   
     // Free VRAM
-    checkCuda(cudaFree(sumGpu));
-    checkCuda(cudaFree(stdDevGpu));
     checkCuda(cudaFree(normalizedImgGpu));
     checkCuda(cudaFree(gpuImg));
 
